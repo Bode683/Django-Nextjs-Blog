@@ -7,61 +7,70 @@ from django.db import models
 # Serializers define the API representation.
 
 class UserSerializer(serializers.ModelSerializer):
-    Posts = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # posts = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     comments = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    categories = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # categories = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'posts', 'comments', 'categories']
+        fields = ['id', 'username', 'comments']
 
-class PostSerializer(serializers.ModelSerializer):
-    # owner = serializers.ReadOnlyField(source='owner.username')
-    comments = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-
-    class Meta:
-        model = Post
-        fields = ('title', 'image', 'slug', 'category', 'content', 'author', 'updated_at', 'status', 'comments', 'categories')
-
+# Serializer for post sections
 class SectionSerializer(serializers.ModelSerializer):
-    posts = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Section
-        fields = ('post', 'image', 'content')
-    
+        fields = '__all__'
+
+# Serializer for Tags
+class TagSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tag
+        fields = '__all__'
+
+# Serializer for viewing a post without pk values
+class PostSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.username')
+    sections = SectionSerializer(many=True, read_only=True)
+    category = serializers.ReadOnlyField(source='category.name')
+    tags = TagSerializer(many=True)
+
+    class Meta:
+        model = Post
+        fields = ('id', 'title', 'image', 'description', 'sections', 'author', 'category', 'created_at', 'updated_at', 'status', 'tags')
+
+# Serializer for creating a new post
+class PostCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Post
+        fields = '__all__'
+
+# Serializer for updating a post
+class PostUpdateSerializer(serializers.ModelSerializer):
+    # sections = SectionSerializer(many=True)
+    class Meta:
+        model = Post
+        fields = '__all__'
+# Serializer for retrieving a new post with all pk values
+class PostRetrieveSerializer(serializers.ModelSerializer):
+    sections = SectionSerializer(many=True)
+    class Meta:
+        model = Post
+        fields = ('id', 'title', 'image', 'description', 'sections', 'author', 'category',  'status')
+        
 class CommentSerializer(serializers.ModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.username')
+    # owner = serializers.ReadOnlyField(source='owner.username')
 
     class Meta:
         model = Comment
-        fields = ['id', 'body', 'owner', 'post']
+        fields = ['id', 'post', 'body', 'owner']
 
+# Serializer for categories
 class CategorySerializer(serializers.ModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.username')
     posts = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'owner', 'posts']
-
-    def create(self, validated_data):
-        """
-        Create and return a new `Snippet` instance, given the validated data.
-        """
-        return Post.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        """
-        Update and return an existing `Snippet` instance, given the validated data.
-        """
-        instance.title = validated_data.get('title', instance.title)
-        instance.image = validated_data.get('image', instance.image)
-        instance.slug = validated_data.get('slug', instance.slug)
-        instance.category = validated_data.get('category', instance.category)
-        instance.content = validated_data.get('content', instance.content)
-        instance.author = validated_data.get('author', instance.author)
-        instance.updated_at = validated_data.get('updated_at', instance.updated_at)
-        instance.status = validated_data.get('status', instance.status)
-        instance.save()
-        return instance
+        fields = ['id', 'name', 'posts']
